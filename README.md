@@ -1,103 +1,164 @@
-# 🔍 SmartCompetitorIntel - AI 竞品情报分析系统
+# SmartCompetitorIntel
 
-> AI 驱动的全渠道竞品情报分析与智能问答系统
+SmartCompetitorIntel is a FastAPI-based RAG service for competitor intelligence. It turns product, marketing, and social-media notes into a searchable knowledge base, then answers analysis questions with retrieved sources and streaming LLM responses.
 
-## ✨ 功能特性
+The current version focuses on Chinese competitor-research workflows and ships with mock data so contributors can run the full pipeline locally before connecting real crawlers.
 
-- **RAG 智能问答**：基于向量检索的竞品知识库问答，精准引用数据
-- **SSE 流式输出**：打字机效果的实时回答，体验流畅
-- **语义检索**：使用 bge-small-zh 中文 Embedding 模型，语义理解准确
-- **防幻觉机制**：System Prompt 严格约束，只基于检索数据回答
-- **模块化架构**：清晰的分层设计，易于扩展
+## Why This Project Exists
 
-## 🏗️ 技术栈
+Competitor analysis is often scattered across spreadsheets, screenshots, social posts, and ad-hoc notes. This project provides a small, inspectable open-source foundation for:
 
-| 技术 | 用途 |
-|---|---|
-| **FastAPI** | Web 框架，异步 + SSE 流式 |
-| **DeepSeek** | 大模型 API |
-| **ChromaDB** | 向量数据库 |
-| **bge-small-zh** | 中文 Embedding 模型 |
-| **LangChain** | 文本切块工具 |
-| **Pydantic** | 数据校验 + 配置管理 |
+- importing competitor notes into a vector knowledge base;
+- retrieving relevant evidence for a question;
+- generating answers that are grounded in retrieved data;
+- returning source snippets so analysts can verify the answer;
+- extending the system with real crawlers, scheduled reports, and dashboard UI.
 
-## 📁 项目结构
+## Features
 
-```
+- RAG question answering with ChromaDB vector search.
+- Streaming and non-streaming chat responses.
+- Chinese embedding model support through `BAAI/bge-small-zh-v1.5`.
+- FastAPI endpoints with OpenAPI documentation.
+- Mock competitor data for local development.
+- Modular app layout for crawlers, document processing, retrieval, and LLM services.
+
+## Tech Stack
+
+| Area | Technology |
+| --- | --- |
+| API server | FastAPI, Uvicorn |
+| LLM client | OpenAI Python SDK with an OpenAI-compatible base URL |
+| Vector store | ChromaDB |
+| Embeddings | Sentence Transformers, bge-small-zh |
+| Text processing | LangChain text splitters |
+| Config | Pydantic Settings |
+
+## Repository Layout
+
+```text
 SmartCompetitorIntel/
 ├── app/
-│   ├── main.py                  # FastAPI 入口（5个API端点）
-│   ├── config.py                # Pydantic Settings 配置
-│   ├── models/schemas.py        # 数据模型（Pydantic）
+│   ├── main.py
+│   ├── config.py
+│   ├── models/
 │   ├── rag/
-│   │   ├── document_processor.py # 文档切块（RecursiveCharacterTextSplitter）
-│   │   └── vector_store.py       # ChromaDB 向量存储 + 语义检索
 │   ├── services/
-│   │   └── llm_service.py        # DeepSeek LLM（SSE流式 + 非流式）
 │   └── crawler/
-│       └── mock_data.py          # 模拟竞品数据
-├── .env.example                  # 环境变量模板
+├── .env.example
 ├── requirements.txt
 └── README.md
 ```
 
-## 🚀 快速开始
+## Quick Start
 
-### 1. 安装依赖
+### 1. Create a virtual environment
 
 ```bash
 python -m venv venv
-source venv/bin/activate  # Windows: .\venv\Scripts\activate
+source venv/bin/activate
+```
+
+On Windows:
+
+```powershell
+python -m venv venv
+.\venv\Scripts\activate
+```
+
+### 2. Install dependencies
+
+```bash
 pip install -r requirements.txt
 ```
 
-### 2. 配置环境变量
+### 3. Configure environment variables
 
 ```bash
 cp .env.example .env
-# 编辑 .env，填入你的 DeepSeek API Key
 ```
 
-### 3. 启动服务
+Then edit `.env` and set your API key.
+
+The project currently uses DeepSeek defaults because it exposes an OpenAI-compatible API. You can point the same client at another OpenAI-compatible endpoint by changing `DEEPSEEK_BASE_URL` and `DEEPSEEK_MODEL`.
+
+### 4. Start the API server
 
 ```bash
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-### 4. 导入数据 & 测试问答
+Open the API docs at:
+
+```text
+http://localhost:8000/docs
+```
+
+### 5. Load mock data and ask a question
 
 ```bash
-# 导入模拟数据到知识库
 curl -X POST http://localhost:8000/api/v1/crawl
+```
 
-# RAG 问答
+```bash
 curl -X POST http://localhost:8000/api/v1/chat \
   -H "Content-Type: application/json" \
   -d '{"query": "哪个赛道互动量最高？", "stream": false}'
 ```
 
-### 5. Swagger 文档
+## API Endpoints
 
-启动后访问 http://localhost:8000/docs 查看完整 API 文档。
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/health` | Health check |
+| `POST` | `/api/v1/chat` | RAG chat with optional SSE streaming |
+| `POST` | `/api/v1/crawl` | Import mock competitor data |
+| `GET` | `/api/v1/knowledge/stats` | Show vector-store status |
+| `POST` | `/api/v1/knowledge/clear` | Clear the knowledge base |
 
-## 📡 API 接口
+## Current Status
 
-| 方法 | 路径 | 功能 |
-|---|---|---|
-| GET | `/health` | 健康检查 |
-| POST | `/api/v1/chat` | 智能对话（RAG + SSE） |
-| POST | `/api/v1/crawl` | 导入数据到知识库 |
-| GET | `/api/v1/knowledge/stats` | 知识库状态 |
-| POST | `/api/v1/knowledge/clear` | 清空知识库 |
+This repository is an early-stage open-source project. The core backend pipeline is in place:
 
-## 🔮 后续规划
+- mock data ingestion;
+- document chunking;
+- vector storage and retrieval;
+- grounded LLM response generation;
+- FastAPI service endpoints.
 
-- [ ] Agent 工具调用（实时搜索 + 时间查询）
-- [ ] 自动日报/周报生成
-- [ ] 多轮对话记忆（Redis）
-- [ ] Docker 容器化部署
-- [ ] 真实平台数据采集器
+The next milestone is to replace mock inputs with real, permission-aware data connectors and add a small UI for analysts.
 
-## 📄 License
+## Roadmap
 
-MIT
+- Add connector interfaces for user-provided competitor data exports.
+- Add scheduled daily and weekly intelligence reports.
+- Add Redis-backed conversation memory.
+- Add Docker and docker-compose deployment.
+- Add tests for retrieval, prompt grounding, and API behavior.
+- Add a lightweight dashboard for uploading notes and reviewing sources.
+
+## Good First Issues
+
+- Add unit tests for `DocumentProcessor`.
+- Add a `/api/v1/knowledge/search` endpoint for debugging retrieval results.
+- Add Docker support.
+- Improve `.env.example` with provider-specific examples.
+- Add sample request/response fixtures for the API docs.
+
+## How Codex Can Help Maintain This Project
+
+This project is a good fit for AI-assisted open-source maintenance because it has clear, testable development tasks:
+
+- writing tests around RAG retrieval and API behavior;
+- reviewing prompt changes for hallucination risk;
+- refactoring provider configuration while keeping backward compatibility;
+- adding documentation examples and troubleshooting notes;
+- implementing small roadmap items without blocking maintainers.
+
+## Contributing
+
+Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
